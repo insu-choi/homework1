@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="net.class101.homework1.mappers.ProductMapper">
+
+    <select id="selectAllProduct" resultType="java.util.HashMap">
+        select
+            *
+        from
+            TBL_PRODUCTS
+    </select>
+
+    <select id="selectOneById" resultType="java.util.HashMap">
+        select
+            ID,
+            KIND,
+            PRODUCT_NAME,
+            PRICE,
+            STOCK
+        from
+            TBL_PRODUCTS
+        where
+            ID = #{id}
+    </select>
+
+    <update id="updateStockById">
+        update
+            TBL_PRODUCTS
+        set
+            STOCK = #{stock}
+        where
+            ID = #{id}
+    </update>
+
+</mapper>
