@@ -35,8 +35,7 @@ public class Homework1Application implements CommandLineRunner {
         String menu = null;
 
         List<Map<String, Object>> basket = new ArrayList<>();
-        while (! StringUtils.equals(menu, "q"))
-        {
+        while (! StringUtils.equals(menu, "q")) {
             System.out.print("입력(o[order]: 주문, q[quit]: 종료) : ");
             try {
                 menu = scan.nextLine();
@@ -47,8 +46,7 @@ public class Homework1Application implements CommandLineRunner {
                 log.error(e.getMessage());
             }
 
-            switch (menu)
-            {
+            switch (menu) {
                 case "t":
                     menu = "q";
                     break;
@@ -70,8 +68,7 @@ public class Homework1Application implements CommandLineRunner {
     private void printProducts() {
         List<Map<String, Object>> list = productMapper.selectAllProduct();
         System.out.format("%-10s %-60s %10s %10s\n", "상품번호", "상품명", "판매가격", "재고수");
-        for(Map<String, Object> result:list)
-        {
+        for(Map<String, Object> result:list) {
             System.out.format("%-10s %-60s %10d %10d\n",
                 (String)result.get("ID"),
                 (String)result.get("PRODUCT_NAME"),
