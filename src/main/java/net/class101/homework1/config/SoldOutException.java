@@ -1,12 +1,7 @@
-package net.class101.homework1.exception;
+package net.class101.homework1.config;
 
 public class SoldOutException extends RuntimeException {
     public int code;
-
-    public SoldOutException(int code)
-    {
-        this.code = code;
-    }
 
     public SoldOutException(String message)
     {

@@ -5,7 +5,11 @@
 
     <select id="selectAllProduct" resultType="java.util.HashMap">
         select
-            *
+            ID,
+            KIND,
+            PRODUCT_NAME,
+            PRICE,
+            STOCK
         from
             TBL_PRODUCTS
     </select>

@@ -1,16 +1,19 @@
 package net.class101.homework1;
 
 import lombok.extern.slf4j.Slf4j;
-import net.class101.homework1.mappers.ProductMapper;
+import net.class101.homework1.config.SoldOutException;
+import net.class101.homework1.service.ShoppingBasketService;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import java.util.HashMap;
+import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.*;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -18,38 +21,95 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @SpringBootTest
 class Homework1ApplicationTests {
 
-//    private Logger logger = LoggerFactory.getLogger(this.getClass());
-
     @Autowired
-    ProductMapper productMapper;
+	ShoppingBasketService shoppingBasketService;
 
 	@Test
 	void contextLoads() {
 	}
 
 	@Test
-    public void t1() {
-	    List<Map<String, Object>> products = productMapper.selectAllProduct();
+    public void multiThreadStockTest() throws InterruptedException, ExecutionException {
+		int numberOfThreads = 5;
+		int SuccessResultCount = 2;
+		String testProductId = "42031";
+		ExecutorService service = Executors.newFixedThreadPool(numberOfThreads);
+		CountDownLatch latch = new CountDownLatch(numberOfThreads);
 
-	    Map<String, Object> product = products.get(2);
-        log.info("ID " + product.get("ID"));
-        assertEquals("65625", product.get("ID"));
+		List<List<Map<String, Object>>> baskets = new ArrayList<>();
+		final List<Future<String>> futures = new ArrayList<>();
 
-        product.put("ID", "33333");
-        assertEquals("33333", product.get("ID"));
+		// 장바구니 or 결제에서 SoldOut 확인
+		for (int i = 0; i < numberOfThreads - 1; i++) {
+			futures.add(service.submit(() -> {
+				String tName = Thread.currentThread().getName();
+				Long tId = Thread.currentThread().getId();
+				log.info("-------------------------------- " + tId + " --" + tName + " Start");
+				List<Map<String, Object>> basket = new ArrayList<>();
+				String result = "Success";
+				try {
+					shoppingBasketService.addKitOrKlassInBasket(basket, testProductId, new BigDecimal(1));
+					shoppingBasketService.orderCompleteProcess(basket);
+				}
+				catch (SoldOutException e) {
+					result = "Fail : " + e.getMessage();
+					log.error(e.getMessage());
+				}
+				finally
+				{
+					baskets.add(basket);
+					latch.countDown();
+				}
+				return tId + "_" + tName + " : " + result;
+			}));
+		}
 
-	    Map<String, Object> product1 = products.get(2);
-        log.info("ID1 " + product1.get("ID"));
-        assertEquals("33333", product1.get("ID"));
-    }
+		// 장바구니에서 SoldOut 확인
+		Thread.sleep(1000);
+		futures.add(service.submit(() -> {
+			String tName = Thread.currentThread().getName();
+			Long tId = Thread.currentThread().getId();
+			log.info("-------------------------------- " + tId + " --" + tName + " Start");
+			List<Map<String, Object>> basket = new ArrayList<>();
+			String result = "Success";
+			try {
+				shoppingBasketService.addKitOrKlassInBasket(basket, testProductId, new BigDecimal(1));
+				shoppingBasketService.orderCompleteProcess(basket);
+			}
+			catch (SoldOutException e) {
+				result = "Fail : " + e.getMessage();
+				log.error(e.getMessage());
+			}
+			finally
+			{
+				baskets.add(basket);
+				latch.countDown();
+			}
+			return tId + "_" + tName + " : " + result;
+		}));
 
-	@Test
-    public void t2() {
-	    Map<String, Object> result = new HashMap<>();
-	    log.info("this: " + result.isEmpty());
+		latch.await();
+		System.out.println();
+		for (Future<String> result: futures) {
+			System.out.println(result.get());
+		}
+		System.out.println("result size: " + futures.stream().filter((v)->{
+			try {
+				return StringUtils.contains(v.get(), "Success");
+			} catch (InterruptedException | ExecutionException e) {
+				e.printStackTrace();
+			}
+			return false;
+		}).collect(Collectors.toList()).size());
 
-	    Long a = 99999L;
-	    log.info(String.format("%d", a));
+		assertEquals(SuccessResultCount, futures.stream().filter((v)->{
+			try {
+				return StringUtils.contains(v.get(), "Success");
+			} catch (InterruptedException | ExecutionException e) {
+				e.printStackTrace();
+			}
+			return false;
+		}).collect(Collectors.toList()).size());
     }
 
 
